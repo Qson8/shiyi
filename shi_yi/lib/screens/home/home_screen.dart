@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/constants.dart';
 import '../../utils/theme.dart';
-import '../../widgets/neumorphic_card.dart';
+import '../../widgets/animated_hanfu_card.dart';
+import '../../widgets/animated_hanfu_icon.dart';
+import '../../widgets/simple_animated_card.dart';
+import 'animation_test_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,6 +21,15 @@ class HomeScreen extends StatelessWidget {
             // 可以添加侧边栏
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.animation_rounded),
+            onPressed: () {
+              context.push('/animation-test');
+            },
+            tooltip: '动画测试',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -28,7 +40,7 @@ class HomeScreen extends StatelessWidget {
             _buildWelcomeCard(context),
             const SizedBox(height: 24),
             
-            // 功能入口 - 新拟态风格
+            // 功能入口 - 新拟态风格 + 汉服动画
             _buildFeatureCard(
               context,
               icon: Icons.menu_book_rounded,
@@ -36,6 +48,7 @@ class HomeScreen extends StatelessWidget {
               subtitle: '了解汉服形制和历史',
               iconColor: const Color(0xFF2196F3),
               onTap: () => context.push('/knowledge'),
+              index: 1,
             ),
             const SizedBox(height: 12),
             _buildFeatureCard(
@@ -45,6 +58,7 @@ class HomeScreen extends StatelessWidget {
               subtitle: '管理你的汉服收藏',
               iconColor: const Color(0xFF9C27B0),
               onTap: () => context.push('/wardrobe'),
+              index: 2,
             ),
             const SizedBox(height: 12),
             _buildFeatureCard(
@@ -54,6 +68,7 @@ class HomeScreen extends StatelessWidget {
               subtitle: '360°查看汉服效果',
               iconColor: const Color(0xFFFF9800),
               onTap: () => context.push('/viewer'),
+              index: 3,
             ),
           ],
         ),
@@ -62,9 +77,14 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildWelcomeCard(BuildContext context) {
-    return NeumorphicCard(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+    // 使用简单动画卡片确保动画可见
+    return SimpleAnimatedCard(
+      index: 0,
+      child: AnimatedHanfuCard(
+        index: 0,
+        enableEntranceAnimation: false, // 禁用内部动画，使用外层动画
+        padding: const EdgeInsets.all(24),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -75,10 +95,11 @@ class HomeScreen extends StatelessWidget {
                   color: AppTheme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
+                child: const AnimatedHanfuIcon(
+                  icon: Icons.auto_awesome_rounded,
                   color: AppTheme.primaryColor,
                   size: 24,
+                  enableBreathingAnimation: true,
                 ),
               ),
               const SizedBox(width: 12),
@@ -103,6 +124,7 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ],
+        ),
       ),
     );
   }
@@ -114,11 +136,17 @@ class HomeScreen extends StatelessWidget {
     required String subtitle,
     required Color iconColor,
     required VoidCallback onTap,
+    required int index,
   }) {
-    return NeumorphicCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(20),
-      child: Row(
+    // 使用简单动画卡片确保动画可见
+    return SimpleAnimatedCard(
+      index: index,
+      child: AnimatedHanfuCard(
+        index: index,
+        enableEntranceAnimation: false, // 禁用内部动画，使用外层动画
+        onTap: onTap,
+        padding: const EdgeInsets.all(20),
+        child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
@@ -126,7 +154,12 @@ class HomeScreen extends StatelessWidget {
               color: iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: iconColor, size: 28),
+            child: AnimatedHanfuIcon(
+              icon: icon,
+              color: iconColor,
+              size: 28,
+              enableFlowAnimation: true,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -153,6 +186,7 @@ class HomeScreen extends StatelessWidget {
             color: Colors.grey[400],
           ),
         ],
+        ),
       ),
     );
   }

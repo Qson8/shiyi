@@ -6,6 +6,7 @@ import 'services/database_service.dart';
 import 'services/knowledge_repository.dart';
 import 'services/wardrobe_repository.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/home/animation_test_screen.dart';
 import 'screens/knowledge/knowledge_list_screen.dart';
 import 'screens/wardrobe/wardrobe_list_screen.dart';
 import 'screens/viewer/model_list_screen.dart';
@@ -40,6 +41,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/viewer',
       builder: (context, state) => const ModelListScreen(),
+    ),
+    GoRoute(
+      path: '/animation-test',
+      builder: (context, state) => const AnimationTestScreen(),
     ),
   ],
 );

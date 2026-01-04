@@ -66,9 +66,10 @@ lib/
 
 ### 前置要求
 
-- Flutter SDK (>=3.4.0)
+- Flutter SDK (>=3.4.0) - 支持鸿蒙平台需要 Flutter ohos 版本
 - Dart SDK
 - Android Studio / Xcode (用于移动端开发)
+- DevEco Studio (用于鸿蒙开发，可选)
 
 ### 安装步骤
 
@@ -87,17 +88,29 @@ flutter pub get
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-4. **运行应用**
+4. **启用鸿蒙平台支持**（如需要）
 ```bash
-# Android
-flutter run
+flutter config --enable-ohos
+```
 
-# iOS
-flutter run -d ios
+5. **运行应用**
+```bash
+# 使用脚本运行（推荐）
+./run.sh macos    # macOS
+./run.sh ios      # iOS
+./run.sh android  # Android
+./run.sh ohos     # 鸿蒙设备
+./run.sh chrome   # Chrome
 
-# 指定设备
-flutter devices  # 查看可用设备
-flutter run -d <device-id>
+# 或直接使用 flutter run
+flutter run                    # 自动选择设备
+flutter run -d macos           # macOS
+flutter run -d ios             # iOS
+flutter run -d android         # Android
+flutter run -d 127.0.0.1:5555  # 鸿蒙设备（使用设备ID）
+
+# 查看可用设备
+flutter devices
 ```
 
 ## 功能说明
@@ -121,7 +134,10 @@ flutter run -d <device-id>
 
 - 查看3D模型列表
 - 加载和显示GLB格式模型
-- 后续版本将支持360°旋转查看
+- 支持多种渲染方案（ModelViewer / WebView / 占位视图）
+- 自动降级机制，确保在不同平台上都能使用
+- 支持360°旋转查看、缩放、AR等功能
+- 兼容鸿蒙、Android、iOS、macOS等平台
 
 ## 数据初始化
 
@@ -158,7 +174,7 @@ assets/models/hanfu-test.glb
 ### 后续版本
 - [ ] AI形制识别
 - [ ] AI穿搭推荐
-- [ ] 完整的3D渲染（360°旋转）
+- ✅ 完整的3D渲染（360°旋转）- 已实现
 - [ ] 更多3D模型
 - [ ] 数据导出/导入
 - [ ] 云端同步（可选）
@@ -166,7 +182,12 @@ assets/models/hanfu-test.glb
 ## 注意事项
 
 1. **Hive适配器**: 如果修改了数据模型，需要重新运行 `build_runner` 生成适配器
-2. **3D模型**: 当前3D展示为占位实现，后续版本将集成完整的3D渲染引擎
+2. **3D模型**: 
+   - 支持 GLB 格式的3D模型
+   - 使用多种渲染方案（ModelViewer / WebView / 占位视图），自动选择最适合的方式
+   - 在鸿蒙平台上会自动降级到 WebView 方案
+   - 如果所有方案都不可用，会显示占位视图
+   - 支持手动切换渲染方案
 3. **数据存储**: 所有数据存储在本地，不会上传到云端
 
 ## 问题反馈
