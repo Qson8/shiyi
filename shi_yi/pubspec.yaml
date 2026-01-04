@@ -78,6 +78,15 @@ flutter:
     - assets/3d_libs/OrbitControls.js
     - assets/data/knowledge_base.json
 
+  # 字体配置
+  fonts:
+    - family: FreshHanfu # 字体家族名称，与前文代码对应
+      fonts:
+        - asset: assets/fonts/SourceHanSansCN-Light.otf
+          weight: 300
+        - asset: assets/fonts/LXGWWenKai-Regular.ttf
+          weight: 400
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
 

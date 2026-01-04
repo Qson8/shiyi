@@ -6,6 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../../widgets/loading_indicator.dart';
+import '../../utils/shiyi_color.dart';
+import '../../utils/shiyi_font.dart';
+import '../../utils/shiyi_icon.dart';
 
 class ModelViewerScreen extends StatefulWidget {
   final String modelName;
@@ -55,10 +58,11 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   }
 
   void _initializeWebView() {
-    // 确保在主线程初始化WebView
+    // 确保在主线程初始化WebView - 性能优化配置
     _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
+      ..enableZoom(false)  // 禁用缩放以提升性能
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -426,38 +430,38 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
             );
             camera.position.set(0, 0, 5);
             
-            // 渲染器
+            // 渲染器 - 性能优化配置
             renderer = new THREE.WebGLRenderer({ 
-                antialias: true,
-                alpha: false
+                antialias: false,  // 关闭抗锯齿以提升性能
+                alpha: false,
+                powerPreference: 'high-performance',  // 优先使用高性能GPU
+                precision: 'mediump'  // 使用中等精度以提升性能
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.enabled = false;  // 关闭阴影以大幅提升性能
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));  // 限制像素比以提升性能
             container.appendChild(renderer.domElement);
             
-            // 控制器
+            // 控制器 - 性能优化配置
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
+            controls.dampingFactor = 0.1;  // 增加阻尼因子以减少计算
             controls.minDistance = 1;
             controls.maxDistance = 10;
             controls.enableZoom = true;
             controls.enableRotate = true;
-            controls.autoRotate = false;
+            controls.autoRotate = false;  // 保持关闭自动旋转以节省性能
+            controls.enablePan = true;
             
-            // 灯光
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            // 灯光 - 性能优化：减少灯光数量和复杂度
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);  // 增加环境光强度
             scene.add(ambientLight);
             
-            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.9);
-            directionalLight1.position.set(5, 5, 5);
-            directionalLight1.castShadow = true;
-            scene.add(directionalLight1);
-            
-            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight2.position.set(-5, -5, -5);
-            scene.add(directionalLight2);
+            // 只使用一个方向光，关闭阴影以提升性能
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 5, 5);
+            directionalLight.castShadow = false;  // 关闭阴影
+            scene.add(directionalLight);
             
             // 加载模型
             const loader = new GLTFLoader();
@@ -517,20 +521,58 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 }
             );
             
-            // 动画循环
-            function animate() {
+            // 动画循环 - 性能优化：添加帧率控制和性能监控
+            let lastFrameTime = performance.now();
+            let frameCount = 0;
+            let fps = 60;
+            const targetFPS = 30;  // 目标帧率：30fps以节省性能
+            const frameInterval = 1000 / targetFPS;
+            let lastRenderTime = 0;
+            let needsRender = true;  // 只在需要时渲染
+            
+            function animate(currentTime) {
                 requestAnimationFrame(animate);
+                
+                const elapsed = currentTime - lastRenderTime;
+                
+                // 帧率控制：限制渲染频率
+                if (elapsed < frameInterval) {
+                    return;
+                }
+                
+                lastRenderTime = currentTime - (elapsed % frameInterval);
                 
                 // 更新动画混合器（如果存在）
                 if (mixer) {
                     const delta = clock.getDelta();
-                    mixer.update(delta);
+                    if (delta > 0) {  // 只在有有效delta时更新
+                        mixer.update(delta);
+                        needsRender = true;
+                    }
                 }
                 
-                controls.update();
-                renderer.render(scene, camera);
+                // 只在控制器有变化或需要渲染时更新
+                if (controls.enableDamping) {
+                    controls.update();
+                    needsRender = true;
+                }
+                
+                // 只在需要时渲染
+                if (needsRender) {
+                    renderer.render(scene, camera);
+                    needsRender = false;
+                }
+                
+                // 性能监控（可选，用于调试）
+                frameCount++;
+                if (currentTime - lastFrameTime >= 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastFrameTime = currentTime;
+                    // console.log('FPS:', fps);  // 取消注释以查看FPS
+                }
             }
-            animate();
+            animate(performance.now());
             
             // 响应式调整
             window.addEventListener('resize', function() {
@@ -555,10 +597,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       return ModelViewer(
         src: _modelPath!,
         alt: widget.modelName,
-        ar: true,
-        autoRotate: true,
+        ar: false,  // 关闭AR以提升性能
+        autoRotate: false,  // 关闭自动旋转以节省性能
         cameraControls: true,
         backgroundColor: const Color(0xFF1a1a1a),
+        disableZoom: false,
+        // interactionPrompt 参数已移除，使用默认配置
       );
     } catch (e) {
       // 如果 ModelViewer 创建失败，切换到 WebView 方案
@@ -752,9 +796,18 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     }
 
     return Scaffold(
+      backgroundColor: ShiyiColor.bgColor,
       appBar: AppBar(
-        title: Text(widget.modelName),
-        backgroundColor: Colors.black87,
+        title: Text(
+          widget.modelName,
+          style: ShiyiFont.titleStyle.copyWith(fontSize: 18),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: ShiyiIcon.backIcon,
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           if (_viewerMode == ViewerMode.webview && !_isWebViewReady)
             const Padding(
@@ -764,12 +817,13 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(ShiyiColor.primaryColor),
                 ),
               ),
             ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+                icon: const Icon(Icons.speed, color: ShiyiColor.primaryColor),
+                tooltip: '性能优化已启用',
             onSelected: (value) {
               if (value == 'modelviewer' && _modelPath != null) {
                 setState(() {
@@ -806,7 +860,6 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
           ),
         ],
       ),
-      backgroundColor: Colors.black,
       body: bodyWidget,
     );
   }

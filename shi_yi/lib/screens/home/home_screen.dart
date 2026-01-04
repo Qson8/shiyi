@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/constants.dart';
-import '../../utils/theme.dart';
+import '../../utils/shiyi_color.dart';
+import '../../utils/shiyi_font.dart';
+import '../../utils/shiyi_decoration.dart';
+import '../../utils/shiyi_icon.dart';
+import '../../utils/shiyi_transition.dart';
+import '../../screens/knowledge/knowledge_list_screen.dart';
+import '../../screens/wardrobe/wardrobe_list_screen.dart';
+import '../../screens/viewer/model_list_screen.dart';
 import '../../widgets/animated_hanfu_card.dart';
 import '../../widgets/animated_hanfu_icon.dart';
 import '../../widgets/simple_animated_card.dart';
@@ -13,61 +20,78 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ShiyiColor.bgColor,
       appBar: AppBar(
-        title: const Text(AppConstants.appName),
+        title: Text(
+          AppConstants.appName,
+          style: ShiyiFont.titleStyle.copyWith(color: ShiyiColor.primaryColor),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.menu_rounded),
+          icon: ShiyiIcon.hanfuIcon,
           onPressed: () {
             // 可以添加侧边栏
           },
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.animation_rounded),
+            icon: const Icon(Icons.animation_rounded, color: ShiyiColor.primaryColor),
             onPressed: () {
-              context.push('/animation-test');
+              // 使用竹叶轻摆转场
+              Navigator.push(
+                context,
+                ShiyiTransition.bambooSwayTransition(const AnimationTestScreen()),
+              );
             },
             tooltip: '动画测试',
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 欢迎卡片 - 新拟态风格
+            // 欢迎卡片 - 清新国风风格
             _buildWelcomeCard(context),
             const SizedBox(height: 24),
-            
-            // 功能入口 - 新拟态风格 + 汉服动画
+
+            // 功能入口 - 清新国风风格
             _buildFeatureCard(
               context,
-              icon: Icons.menu_book_rounded,
-              title: '知识库',
+              icon: ShiyiIcon.knowledgeIcon,
+              title: '拾衣 · 知识',
               subtitle: '了解汉服形制和历史',
-              iconColor: const Color(0xFF2196F3),
-              onTap: () => context.push('/knowledge'),
+              onTap: () => Navigator.push(
+                context,
+                ShiyiTransition.freshSlideTransition(_buildKnowledgeScreen()),
+              ),
               index: 1,
             ),
             const SizedBox(height: 12),
             _buildFeatureCard(
               context,
-              icon: Icons.checkroom_rounded,
-              title: '我的衣橱',
+              icon: ShiyiIcon.hanfuIcon,
+              title: '拾衣 · 衣橱',
               subtitle: '管理你的汉服收藏',
-              iconColor: const Color(0xFF9C27B0),
-              onTap: () => context.push('/wardrobe'),
+              onTap: () => Navigator.push(
+                context,
+                ShiyiTransition.freshSlideTransition(_buildWardrobeScreen()),
+              ),
               index: 2,
             ),
             const SizedBox(height: 12),
             _buildFeatureCard(
               context,
-              icon: Icons.view_in_ar_rounded,
-              title: '3D展示',
+              icon: ShiyiIcon.viewerIcon,
+              title: '拾衣 · 观览',
               subtitle: '360°查看汉服效果',
-              iconColor: const Color(0xFFFF9800),
-              onTap: () => context.push('/viewer'),
+              onTap: () => Navigator.push(
+                context,
+                ShiyiTransition.scrollUnfoldTransition(_buildViewerScreen()),
+              ),
               index: 3,
             ),
           ],
@@ -77,13 +101,12 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildWelcomeCard(BuildContext context) {
-    // 使用简单动画卡片确保动画可见
+    // 使用清新国风设计
     return SimpleAnimatedCard(
       index: 0,
-      child: AnimatedHanfuCard(
-        index: 0,
-        enableEntranceAnimation: false, // 禁用内部动画，使用外层动画
+      child: Container(
         padding: const EdgeInsets.all(24),
+        decoration: ShiyiDecoration.cardDecoration,
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -92,12 +115,12 @@ class HomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: ShiyiColor.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const AnimatedHanfuIcon(
                   icon: Icons.auto_awesome_rounded,
-                  color: AppTheme.primaryColor,
+                  color: Color(0xFF91B493),
                   size: 24,
                   enableBreathingAnimation: true,
                 ),
@@ -109,14 +132,12 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       '欢迎使用${AppConstants.appName}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: ShiyiFont.titleStyle.copyWith(fontSize: 18),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '拾取汉服之美，记录穿搭之趣',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: ShiyiFont.smallStyle,
                     ),
                   ],
                 ),
@@ -131,63 +152,65 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildFeatureCard(
     BuildContext context, {
-    required IconData icon,
+    required Widget icon,
     required String title,
     required String subtitle,
-    required Color iconColor,
     required VoidCallback onTap,
     required int index,
   }) {
-    // 使用简单动画卡片确保动画可见
+    // 使用清新国风设计
     return SimpleAnimatedCard(
       index: index,
-      child: AnimatedHanfuCard(
-        index: index,
-        enableEntranceAnimation: false, // 禁用内部动画，使用外层动画
+      child: GestureDetector(
         onTap: onTap,
-        padding: const EdgeInsets.all(20),
-        child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: ShiyiDecoration.cardDecoration,
+          child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: ShiyiColor.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: icon,
             ),
-            child: AnimatedHanfuIcon(
-              icon: icon,
-              color: iconColor,
-              size: 28,
-              enableFlowAnimation: true,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: ShiyiFont.smallStyle,
+                  ),
+                ],
+              ),
             ),
+            ShiyiIcon.nextIcon,
+          ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 16,
-            color: Colors.grey[400],
-          ),
-        ],
         ),
       ),
     );
+  }
+
+  // 构建各个页面的方法（为了使用转场动画）
+  Widget _buildKnowledgeScreen() {
+    return const KnowledgeListScreen();
+  }
+
+  Widget _buildWardrobeScreen() {
+    return const WardrobeListScreen();
+  }
+
+  Widget _buildViewerScreen() {
+    return const ModelListScreen();
   }
 }

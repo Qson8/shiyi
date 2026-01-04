@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../models/hanfu_item.dart';
 import '../../services/wardrobe_repository.dart';
 import '../../utils/constants.dart';
-import '../../utils/theme.dart';
+import '../../utils/shiyi_color.dart';
+import '../../utils/shiyi_font.dart';
+import '../../utils/shiyi_icon.dart';
 
 class WardrobeEditScreen extends StatefulWidget {
   final HanfuItem? item;
@@ -96,142 +98,207 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.item == null ? '添加汉服' : '编辑汉服'),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
+      backgroundColor: ShiyiColor.bgColor,
+      body: SafeArea(
+        child: Column(
           children: [
-            // 名称
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: '名称',
-                hintText: '请输入汉服名称',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '请输入名称';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            // 朝代
-            DropdownButtonFormField<String>(
-              value: _selectedDynasty,
-              decoration: InputDecoration(
-                labelText: '朝代',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              items: AppConstants.dynasties
-                  .map((dynasty) => DropdownMenuItem(
-                        value: dynasty,
-                        child: Text(dynasty),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() => _selectedDynasty = value!);
-              },
-            ),
-            const SizedBox(height: 16),
-            // 类型
-            DropdownButtonFormField<String>(
-              value: _selectedType,
-              decoration: InputDecoration(
-                labelText: '类型',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              items: AppConstants.hanfuTypes
-                  .map((type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(type),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() => _selectedType = value!);
-              },
-            ),
-            const SizedBox(height: 24),
-            // 尺码记录
-            Text(
-              '尺码记录（单位：cm）',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+            // 自定义顶部栏 - 清新国风设计
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: ShiyiIcon.backIcon,
+                    onPressed: () => Navigator.pop(context),
                   ),
-            ),
-            const SizedBox(height: 12),
-            ...AppConstants.sizeFields.map((field) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: TextFormField(
-                  controller: _sizeControllers[field],
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: field,
-                    hintText: '请输入$field',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
+                  Expanded(
+                    child: Text(
+                      widget.item == null ? '拾衣 · 添加' : '拾衣 · 编辑',
+                      style: ShiyiFont.titleStyle.copyWith(color: ShiyiColor.primaryColor),
+                      textAlign: TextAlign.center,
                     ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    suffixText: 'cm',
                   ),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-            // 备注
-            TextFormField(
-              controller: _notesController,
-              decoration: InputDecoration(
-                labelText: '备注',
-                hintText: '其他信息（可选）',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.white,
+                  if (widget.item != null)
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: _deleteItem,
+                    )
+                  else
+                    const SizedBox(width: 48),
+                ],
               ),
-              maxLines: 3,
             ),
-            const SizedBox(height: 32),
-            // 保存按钮
-            ElevatedButton(
-              onPressed: _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                '保存',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+
+            // 主内容区
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // 名称
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: '名称',
+                          hintText: '请输入汉服名称',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '请输入汉服名称';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 朝代
+                      TextFormField(
+                        controller: TextEditingController(text: _selectedDynasty),
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: '朝代',
+                          suffixIcon: const Icon(Icons.arrow_drop_down),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          final result = await showDialog<String>(
+                            context: context,
+                            builder: (context) => SimpleDialog(
+                              title: const Text('选择朝代'),
+                              children: AppConstants.dynasties.map((dynasty) {
+                                return SimpleDialogOption(
+                                  onPressed: () => Navigator.pop(context, dynasty),
+                                  child: Text(dynasty),
+                                );
+                              }).toList(),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() => _selectedDynasty = result);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 类型
+                      TextFormField(
+                        controller: TextEditingController(text: _selectedType),
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: '类型',
+                          suffixIcon: const Icon(Icons.arrow_drop_down),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onTap: () async {
+                          final result = await showDialog<String>(
+                            context: context,
+                            builder: (context) => SimpleDialog(
+                              title: const Text('选择类型'),
+                              children: AppConstants.hanfuTypes.map((type) {
+                                return SimpleDialogOption(
+                                  onPressed: () => Navigator.pop(context, type),
+                                  child: Text(type),
+                                );
+                              }).toList(),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() => _selectedType = result);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 尺码信息
+                      Text(
+                        '尺码信息',
+                        style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 16),
+
+                      ...AppConstants.sizeFields.map((field) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: TextFormField(
+                            controller: _sizeControllers[field],
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: field,
+                              hintText: '请输入$field',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                          ),
+                        );
+                      }),
+
+                      const SizedBox(height: 16),
+
+                      // 备注
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: InputDecoration(
+                          labelText: '备注',
+                          hintText: '其他信息（可选）',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 32),
+
+                      // 保存按钮
+                      ElevatedButton(
+                        onPressed: _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ShiyiColor.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          '保存',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -239,5 +306,48 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
         ),
       ),
     );
+  }
+
+  void _deleteItem() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Text(
+          '确认删除',
+          style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
+        ),
+        content: Text(
+          '确定要删除"${widget.item?.name ?? ''}"吗？',
+          style: ShiyiFont.smallStyle,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              '取消',
+              style: TextStyle(color: ShiyiColor.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              '删除',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && widget.item != null) {
+      await _repository.delete(widget.item!.id);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    }
   }
 }

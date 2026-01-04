@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'shiyi_color.dart';
+import 'shiyi_font.dart';
+import 'shiyi_decoration.dart';
+import 'shiyi_icon.dart';
 
 class AppTheme {
-  // 白色主题配色
-  static const Color primaryColor = Color(0xFFFF6B35); // 橙色（用于强调）
-  static const Color backgroundColor = Color(0xFFF5F5F5); // 浅灰背景
-  static const Color surfaceColor = Colors.white; // 白色表面
-  static const Color textPrimary = Color(0xFF2C2C2C); // 深灰文字
-  static const Color textSecondary = Color(0xFF757575); // 中灰文字
+  // 使用清新国风配色
+  static const Color primaryColor = ShiyiColor.primaryColor;
+  static const Color backgroundColor = ShiyiColor.bgColor;
+  static const Color surfaceColor = Colors.white;
+  static const Color textPrimary = ShiyiColor.textPrimary;
+  static const Color textSecondary = ShiyiColor.textSecondary;
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -22,30 +26,31 @@ class AppTheme {
         onBackground: textPrimary,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: surfaceColor,
+        backgroundColor: Colors.transparent, // 清新风格：透明背景
         foregroundColor: textPrimary,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: textPrimary),
-        titleTextStyle: const TextStyle(
-          color: textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
+        iconTheme: const IconThemeData(color: primaryColor),
+        titleTextStyle: ShiyiFont.titleStyle.copyWith(fontSize: 18),
       ),
       cardTheme: CardTheme(
-        color: surfaceColor,
+        color: surfaceColor.withOpacity(0.8), // 半透明
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12), // 清新圆角
         ),
+        shadowColor: const Color(0x1F000000), // Colors.black.withOpacity(0.12)
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12), // 清新圆角
+          borderSide: const BorderSide(color: ShiyiColor.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -54,35 +59,22 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: primaryColor.withOpacity(0.9),
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8), // 清新圆角
           ),
         ),
       ),
-      textTheme: const TextTheme(
-        headlineSmall: TextStyle(
-          color: textPrimary,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-        ),
-        titleMedium: TextStyle(
-          color: textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyMedium: TextStyle(
-          color: textPrimary,
-          fontSize: 14,
-        ),
-        bodySmall: TextStyle(
-          color: textSecondary,
-          fontSize: 12,
-        ),
+      textTheme: TextTheme(
+        headlineSmall: ShiyiFont.titleStyle.copyWith(fontSize: 22),
+        titleMedium: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w600),
+        bodyMedium: ShiyiFont.bodyStyle,
+        bodySmall: ShiyiFont.smallStyle,
       ),
     );
   }
 }
+
