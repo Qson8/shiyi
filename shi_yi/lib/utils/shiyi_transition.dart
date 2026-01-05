@@ -4,29 +4,21 @@ import 'package:flutter/material.dart';
 class ShiyiTransition {
   // 1. 衣袂轻扬转场（优先级最高，贴合汉服主题）
   // 场景：衣橱 -> 详情页、常规页面切换
+  // 使用简单的淡入淡出转场，稳定流畅
   static Route<T> freshSlideTransition<T>(Widget page) {
     return PageRouteBuilder<T>(
-      transitionDuration: const Duration(milliseconds: 600),
-      reverseTransitionDuration: const Duration(milliseconds: 500),
+      transitionDuration: const Duration(milliseconds: 250),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedAnimation = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeInOutCubic,
-          reverseCurve: Curves.easeOutCubic,
-        );
-
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(1, 0),
-            end: Offset.zero,
-          ).chain(CurveTween(
-            curve: const Interval(0.0, 1.0, curve: Curves.easeInOutQuad),
-          )).animate(curvedAnimation),
-          child: FadeTransition(
-            opacity: Tween<double>(begin: 0.6, end: 1.0).animate(curvedAnimation),
-            child: child,
+        // 只使用淡入淡出，去掉滑动动画，避免闪烁
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+            reverseCurve: Curves.easeIn,
           ),
+          child: child,
         );
       },
     );

@@ -22,40 +22,64 @@ class KnowledgeListScreen extends StatefulWidget {
 class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
   List<KnowledgeItem> _items = [];
   List<KnowledgeItem> _filteredItems = [];
-  bool _isLoading = true;
+  bool _isLoading = false; // 改为false，页面结构保持稳定
   String _selectedCategory = '全部';
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
+    // 立即加载数据，与"我的衣橱"保持一致
     _loadData();
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    // 使用Provider提供的共享Repository实例
+    if (!mounted) return;
+    
+    // 先尝试从缓存加载，如果缓存有数据立即显示
     final repository = Provider.of<KnowledgeRepository>(context, listen: false);
-
-    // 确保数据已加载（如果缓存为空，尝试从JSON加载）
-    if (repository.getAll().isEmpty) {
+    final cachedItems = repository.getAll();
+    
+    if (cachedItems.isNotEmpty) {
+      // 缓存有数据，立即显示，不显示加载状态
+      if (mounted) {
+        setState(() {
+          _items = cachedItems;
+          // 去重：根据ID去重
+          final seenIds = <String>{};
+          _items = _items.where((item) {
+            if (seenIds.contains(item.id)) {
+              return false;
+            }
+            return seenIds.add(item.id);
+          }).toList();
+          _filterItems();
+        });
+      }
+    } else {
+      // 缓存为空，显示加载状态并加载数据
+      if (mounted) {
+        setState(() => _isLoading = true);
+      }
+      
+      // 从JSON加载数据
       await repository.loadFromJson();
+      
+      if (!mounted) return;
+      setState(() {
+        _items = repository.getAll();
+        // 去重：根据ID去重
+        final seenIds = <String>{};
+        _items = _items.where((item) {
+          if (seenIds.contains(item.id)) {
+            return false;
+          }
+          return seenIds.add(item.id);
+        }).toList();
+        _filterItems();
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _items = repository.getAll();
-      // 去重：根据ID去重
-      final seenIds = <String>{};
-      _items = _items.where((item) {
-        if (seenIds.contains(item.id)) {
-          return false;
-        }
-        return seenIds.add(item.id);
-      }).toList();
-      _filterItems();
-      _isLoading = false;
-    });
   }
 
   void _filterItems() {
@@ -77,13 +101,6 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: ShiyiColor.bgColor,
-        body: const Center(child: LoadingIndicator()),
-      );
-    }
-
     return Scaffold(
       backgroundColor: ShiyiColor.bgColor,
       body: SafeArea(
@@ -158,125 +175,127 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
               ),
             ),
 
-            // 列表
+            // 列表 - 保持页面结构稳定，只在内容区域显示加载状态
             Expanded(
-              child: _filteredItems.isEmpty
-                  ? EmptyState(
-                      icon: Icons.menu_book,
-                      title: '暂无内容',
-                      message: _searchQuery.isNotEmpty ? '没有找到相关结果' : '知识库为空',
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: _filteredItems.length,
-                      itemBuilder: (context, index) {
-                        final item = _filteredItems[index];
-                        return NeumorphicCard(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          padding: const EdgeInsets.all(18),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              ShiyiTransition.freshSlideTransition(
-                                KnowledgeDetailScreen(item: item),
+              child: _isLoading
+                  ? const Center(child: LoadingIndicator())
+                  : _filteredItems.isEmpty
+                      ? EmptyState(
+                          icon: Icons.menu_book,
+                          title: '暂无内容',
+                          message: _searchQuery.isNotEmpty ? '没有找到相关结果' : '知识库为空',
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: _filteredItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _filteredItems[index];
+                            return NeumorphicCard(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              padding: const EdgeInsets.all(18),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  ShiyiTransition.freshSlideTransition(
+                                    KnowledgeDetailScreen(item: item),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: ShiyiColor.primaryColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(Icons.menu_book, color: ShiyiColor.primaryColor),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.title,
+                                              style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: ShiyiColor.primaryColor.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                item.category,
+                                                style: ShiyiFont.smallStyle.copyWith(
+                                                  color: ShiyiColor.primaryColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          item.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                          color: item.isFavorite ? Colors.red[400] : ShiyiColor.textSecondary,
+                                          size: 22,
+                                        ),
+                                        onPressed: () async {
+                                          final repository = Provider.of<KnowledgeRepository>(context, listen: false);
+                                          await repository.toggleFavorite(item.id);
+                                          _loadData();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    item.content,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: ShiyiFont.smallStyle.copyWith(
+                                      color: ShiyiColor.textSecondary,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  if (item.tags.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: item.tags.map((tag) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: ShiyiColor.bgColor,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            tag,
+                                            style: ShiyiFont.smallStyle.copyWith(color: ShiyiColor.textSecondary),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ],
                               ),
                             );
                           },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: ShiyiColor.primaryColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(Icons.menu_book, color: ShiyiColor.primaryColor),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.title,
-                                          style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: ShiyiColor.primaryColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            item.category,
-                                            style: ShiyiFont.smallStyle.copyWith(
-                                              color: ShiyiColor.primaryColor,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      item.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                      color: item.isFavorite ? Colors.red[400] : ShiyiColor.textSecondary,
-                                      size: 22,
-                                    ),
-                                    onPressed: () async {
-                                      final repository = Provider.of<KnowledgeRepository>(context, listen: false);
-                                      await repository.toggleFavorite(item.id);
-                                      _loadData();
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                item.content,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: ShiyiFont.smallStyle.copyWith(
-                                  color: ShiyiColor.textSecondary,
-                                  height: 1.5,
-                                ),
-                              ),
-                              if (item.tags.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: item.tags.map((tag) {
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: ShiyiColor.bgColor,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        tag,
-                                        style: ShiyiFont.smallStyle.copyWith(color: ShiyiColor.textSecondary),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                        ),
             ),
           ],
         ),
