@@ -60,5 +60,33 @@ class KnowledgeItem extends HiveObject {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  /// 转换为JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'category': category,
+      'content': content,
+      'images': images,
+      'tags': tags,
+      'isFavorite': isFavorite,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  /// 从JSON创建
+  factory KnowledgeItem.fromJson(Map<String, dynamic> json) {
+    return KnowledgeItem(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      category: json['category'] as String,
+      content: json['content'] as String,
+      images: List<String>.from(json['images'] as List? ?? []),
+      tags: List<String>.from(json['tags'] as List? ?? []),
+      isFavorite: json['isFavorite'] as bool? ?? false,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
 }
 

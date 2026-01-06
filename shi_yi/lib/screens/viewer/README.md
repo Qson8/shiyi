@@ -27,9 +27,11 @@
 ```dart
 ModelViewerScreen(
   modelName: '汉服测试模型',
-  modelPath: null, // 如果为 null，会从 assets/models/hanfu-test.glb 加载
+  modelPath: 'assets/models/hanfu-model-1.glb', // 如果为 null，会从 ModelRepository 获取默认模型
 )
 ```
+
+**注意：** 所有模型数据统一从 `assets/data/models.json` 文件加载，通过 `ModelRepository` 服务管理。
 
 ## 自动降级机制
 
@@ -57,6 +59,8 @@ ModelViewerScreen(
 ## 注意事项
 
 1. 模型文件需要是 GLB 格式
-2. 确保模型文件在 `assets/models/` 目录下
-3. 在鸿蒙平台上，如果 ModelViewer 不可用，会自动使用 WebView 方案
+2. 模型数据统一在 `assets/data/models.json` 中管理
+3. 确保模型文件在 `assets/models/` 目录下，并在 `models.json` 中注册
+4. 在鸿蒙平台上，如果 ModelViewer 不可用，会自动使用 WebView 方案
+5. 如果 `modelPath` 为 null，会自动从 `ModelRepository` 获取第一个可用模型
 

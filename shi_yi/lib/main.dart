@@ -2,20 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'utils/theme.dart';
+import 'utils/shiyi_font.dart';
 import 'services/database_service.dart';
 import 'services/knowledge_repository.dart';
 import 'services/wardrobe_repository.dart';
+import 'services/settings_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/animation_test_screen.dart';
 import 'screens/knowledge/knowledge_list_screen.dart';
 import 'screens/wardrobe/wardrobe_list_screen.dart';
 import 'screens/viewer/model_list_screen.dart';
+import 'screens/settings/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // 初始化数据库
   await DatabaseService.init();
+  
+  // 初始化设置服务
+  await SettingsService.init();
+  
+  // 初始化字体系统
+  ShiyiFont.init();
   
   // 从JSON文件加载知识库数据（强制重载以清除旧数据）
   final knowledgeRepo = KnowledgeRepository();
@@ -41,6 +50,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/viewer',
       builder: (context, state) => const ModelListScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
       path: '/animation-test',

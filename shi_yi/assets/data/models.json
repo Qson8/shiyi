@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-01-05T16:30:22.154690Z",
+  "total": 3,
+  "models": [
+    {
+      "id": "hanfu-model-1",
+      "name": "宋制烟青褙子",
+      "dynasty": "宋代",
+      "type": "褙子",
+      "path": "assets/models/hanfu-model-3.glb",
+      "description": "宋代流行的外衣，形制简洁优雅",
+      "thumbnail": null,
+      "tags": ["宋代", "褙子", "外衣"]
+    },
+    {
+      "id": "hanfu-model-2",
+      "name": "明制马面裙",
+      "dynasty": "明代",
+      "type": "马面裙",
+      "path": "assets/models/hanfu-model-2.glb",
+      "description": "明代最具代表性的女装下裳",
+      "thumbnail": null,
+      "tags": ["明代", "马面裙", "下裳"]
+    },
+    {
+      "id": "hanfu-test-3",
+      "name": "唐制齐胸襦裙",
+      "dynasty": "唐代",
+      "type": "齐胸襦裙",
+      "path": "assets/models/hanfu-model-1.glb",
+      "description": "唐代流行的女装款式，优雅飘逸",
+      "thumbnail": null,
+      "tags": ["唐代", "齐胸襦裙", "女装"]
+    }
+  ]
+}
+

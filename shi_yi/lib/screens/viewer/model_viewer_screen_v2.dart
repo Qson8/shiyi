@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import '../../widgets/loading_indicator.dart';
+import '../../services/model_repository.dart';
 
 /// 改进的3D模型查看器，支持多种渲染方案
 class ModelViewerScreenV2 extends StatefulWidget {
@@ -38,18 +39,53 @@ class _ModelViewerScreenV2State extends State<ModelViewerScreenV2> {
       String modelPath;
       final Directory tempDir = await getTemporaryDirectory();
       
-      // 如果提供了路径，直接使用
+      // 如果提供了路径，需要检查是否是assets路径
       if (widget.modelPath != null) {
-        modelPath = widget.modelPath!;
+        final providedPath = widget.modelPath!;
+        // 如果是assets路径，需要复制到临时目录
+        if (providedPath.startsWith('assets/')) {
+          try {
+            final ByteData data = await rootBundle.load(providedPath);
+            final fileName = providedPath.split('/').last;
+            final File file = File('${tempDir.path}/$fileName');
+            await file.writeAsBytes(data.buffer.asUint8List());
+            modelPath = file.path;
+          } catch (e) {
+            throw Exception('无法加载模型文件: $e');
+          }
+        } else {
+          // 已经是文件路径，直接使用
+          modelPath = providedPath;
+        }
       } else {
-        // 从assets加载模型文件
+        // 如果没有提供路径，从ModelRepository获取默认模型
         try {
-          final ByteData data = await rootBundle.load('assets/models/hanfu-test.glb');
-          final File file = File('${tempDir.path}/hanfu-test.glb');
-          await file.writeAsBytes(data.buffer.asUint8List());
-          modelPath = file.path;
+          final models = await ModelRepository.getAll();
+          if (models.isEmpty) {
+            throw Exception('没有可用的模型');
+          }
+          
+          // 使用第一个模型作为默认模型
+          final defaultModel = models.first;
+          final providedPath = defaultModel.path;
+          
+          // 如果是assets路径，需要复制到临时目录
+          if (providedPath.startsWith('assets/')) {
+            try {
+              final ByteData data = await rootBundle.load(providedPath);
+              final fileName = providedPath.split('/').last;
+              final File file = File('${tempDir.path}/$fileName');
+              await file.writeAsBytes(data.buffer.asUint8List());
+              modelPath = file.path;
+            } catch (e) {
+              throw Exception('无法加载模型文件: $e');
+            }
+          } else {
+            // 已经是文件路径，直接使用
+            modelPath = providedPath;
+          }
         } catch (e) {
-          throw Exception('无法加载模型文件: $e');
+          throw Exception('无法加载默认模型: $e');
         }
       }
 

@@ -59,17 +59,24 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
 
   Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
+      // 验证数据
+      if (!_validateData()) {
+        return;
+      }
+
       // 收集尺码数据
       _sizes.clear();
       for (final entry in _sizeControllers.entries) {
         final value = entry.value.text.trim();
         if (value.isNotEmpty) {
           final doubleValue = double.tryParse(value);
-          if (doubleValue != null) {
+          if (doubleValue != null && doubleValue > 0 && doubleValue <= 500) {
             _sizes[entry.key] = doubleValue;
           }
         }
       }
+
+      final itemId = widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
       final item = widget.item?.copyWith(
             name: _nameController.text.trim(),
@@ -77,14 +84,16 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
             type: _selectedType,
             sizes: _sizes,
             notes: _notesController.text.trim(),
+            imagePaths: const [], // 不再使用图片
           ) ??
           HanfuItem(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            id: itemId,
             name: _nameController.text.trim(),
             dynasty: _selectedDynasty,
             type: _selectedType,
             sizes: _sizes,
             notes: _notesController.text.trim(),
+            imagePaths: const [], // 不再使用图片
             createdAt: DateTime.now(),
           );
 
@@ -94,6 +103,49 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
       }
     }
   }
+
+  bool _validateData() {
+    // 验证名称长度
+    final name = _nameController.text.trim();
+    if (name.length > 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('名称不能超过50个字符')),
+      );
+      return false;
+    }
+
+    // 验证备注长度
+    final notes = _notesController.text.trim();
+    if (notes.length > 500) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('备注不能超过500个字符')),
+      );
+      return false;
+    }
+
+    // 验证尺码范围
+    for (final entry in _sizeControllers.entries) {
+      final value = entry.value.text.trim();
+      if (value.isNotEmpty) {
+        final doubleValue = double.tryParse(value);
+        if (doubleValue == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${entry.key}格式不正确')),
+          );
+          return false;
+        }
+        if (doubleValue <= 0 || doubleValue > 500) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${entry.key}必须在0-500之间')),
+          );
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -151,11 +203,23 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
+                        maxLength: 50,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return '请输入汉服名称';
                           }
+                          if (value.length > 50) {
+                            return '名称不能超过50个字符';
+                          }
                           return null;
+                        },
+                        buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                          return Text(
+                            '$currentLength/$maxLength',
+                            style: ShiyiFont.smallStyle.copyWith(
+                              color: ShiyiColor.textSecondary,
+                            ),
+                          );
                         },
                       ),
                       const SizedBox(height: 16),
@@ -242,10 +306,10 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
                           padding: const EdgeInsets.only(bottom: 16),
                           child: TextFormField(
                             controller: _sizeControllers[field],
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: InputDecoration(
                               labelText: field,
-                              hintText: '请输入$field',
+                              hintText: '请输入$field（0-500）',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide.none,
@@ -254,6 +318,18 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
                               fillColor: Colors.white,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
+                            validator: (value) {
+                              if (value != null && value.isNotEmpty) {
+                                final numValue = double.tryParse(value);
+                                if (numValue == null) {
+                                  return '请输入有效数字';
+                                }
+                                if (numValue <= 0 || numValue > 500) {
+                                  return '范围：0-500';
+                                }
+                              }
+                              return null;
+                            },
                           ),
                         );
                       }),
@@ -275,6 +351,15 @@ class _WardrobeEditScreenState extends State<WardrobeEditScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         ),
                         maxLines: 3,
+                        maxLength: 500,
+                        buildCounter: (context, {required currentLength, required isFocused, maxLength}) {
+                          return Text(
+                            '$currentLength/$maxLength',
+                            style: ShiyiFont.smallStyle.copyWith(
+                              color: ShiyiColor.textSecondary,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 32),
 

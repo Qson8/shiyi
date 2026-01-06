@@ -5,19 +5,37 @@ import '../../utils/shiyi_font.dart';
 import '../../utils/shiyi_decoration.dart';
 import '../../utils/shiyi_icon.dart';
 import '../../utils/shiyi_transition.dart';
+import '../../services/model_repository.dart';
+import '../../widgets/loading_indicator.dart';
+import '../../widgets/empty_state.dart';
 
-class ModelListScreen extends StatelessWidget {
+class ModelListScreen extends StatefulWidget {
   const ModelListScreen({Key? key}) : super(key: key);
 
-  // 模型列表数据
-  final List<Map<String, String>> models = const [
-    {
-      'id': 'hanfu-test',
-      'name': '汉服测试模型',
-      'dynasty': '测试',
-      'type': '测试形制',
-    },
-  ];
+  @override
+  State<ModelListScreen> createState() => _ModelListScreenState();
+}
+
+class _ModelListScreenState extends State<ModelListScreen> {
+  List<ModelItem> _models = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModels();
+  }
+
+  Future<void> _loadModels() async {
+    setState(() => _isLoading = true);
+    final models = await ModelRepository.loadFromJson();
+    if (mounted) {
+      setState(() {
+        _models = models;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,68 +54,109 @@ class ModelListScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: models.isEmpty
-          ? Center(
-              child: Text(
-                '暂无3D模型',
-                style: ShiyiFont.bodyStyle.copyWith(color: ShiyiColor.textSecondary),
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: models.length,
-              itemBuilder: (context, index) {
-                final model = models[index];
-                return GestureDetector(
-                  onTap: () {
-                    // 使用卷轴展开转场（适合3D展示页）
-                    Navigator.push(
-                      context,
-                      ShiyiTransition.scrollUnfoldTransition(
-                        ModelViewerScreen(
-                          modelName: model['name'] ?? '模型',
+      body: _isLoading
+          ? const Center(child: LoadingIndicator())
+          : _models.isEmpty
+              ? EmptyState(
+                  icon: Icons.view_in_ar,
+                  title: '暂无3D模型',
+                  message: '模型库为空',
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: _models.length,
+                  itemBuilder: (context, index) {
+                    final model = _models[index];
+                    return GestureDetector(
+                      onTap: () {
+                        // 使用卷轴展开转场（适合3D展示页）
+                        Navigator.push(
+                          context,
+                          ShiyiTransition.scrollUnfoldTransition(
+                            ModelViewerScreen(
+                              modelName: model.name,
+                              modelPath: model.path,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12), // 充足留白
+                        padding: const EdgeInsets.all(16),
+                        decoration: ShiyiDecoration.cardDecoration,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: ShiyiColor.primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: ShiyiIcon.viewerIcon,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    model.name,
+                                    style: ShiyiFont.bodyStyle.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: ShiyiColor.primaryColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          model.dynasty,
+                                          style: ShiyiFont.smallStyle.copyWith(
+                                            fontSize: 11,
+                                            color: ShiyiColor.primaryColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        model.type,
+                                        style: ShiyiFont.smallStyle.copyWith(
+                                          fontSize: 12,
+                                          color: ShiyiColor.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (model.description.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      model.description,
+                                      style: ShiyiFont.smallStyle.copyWith(
+                                        fontSize: 12,
+                                        color: ShiyiColor.textSecondary,
+                                        height: 1.4,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            ShiyiIcon.nextIcon,
+                          ],
                         ),
                       ),
                     );
                   },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12), // 充足留白
-                    padding: const EdgeInsets.all(16),
-                    decoration: ShiyiDecoration.cardDecoration,
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: ShiyiColor.primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: ShiyiIcon.viewerIcon,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                model['name'] ?? '模型',
-                                style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${model['dynasty']} - ${model['type']}',
-                                style: ShiyiFont.smallStyle,
-                              ),
-                            ],
-                          ),
-                        ),
-                        ShiyiIcon.nextIcon,
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                ),
     );
   }
 }

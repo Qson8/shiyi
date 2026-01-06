@@ -10,7 +10,9 @@ import '../../utils/shiyi_color.dart';
 import '../../utils/shiyi_font.dart';
 import '../../utils/shiyi_icon.dart';
 import '../../utils/shiyi_transition.dart';
+import '../../widgets/highlight_text.dart';
 import 'knowledge_detail_screen.dart';
+import 'favorites_screen.dart';
 
 class KnowledgeListScreen extends StatefulWidget {
   const KnowledgeListScreen({Key? key}) : super(key: key);
@@ -25,6 +27,7 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
   bool _isLoading = false; // 改为false，页面结构保持稳定
   String _selectedCategory = '全部';
   String _searchQuery = '';
+  List<String> _categories = ['全部']; // 动态分类列表
 
   @override
   void initState() {
@@ -53,6 +56,8 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
             }
             return seenIds.add(item.id);
           }).toList();
+          // 从数据中提取所有分类
+          _updateCategories();
           _filterItems();
         });
       }
@@ -76,10 +81,27 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
           }
           return seenIds.add(item.id);
         }).toList();
+        // 从数据中提取所有分类
+        _updateCategories();
         _filterItems();
         _isLoading = false;
       });
     }
+  }
+
+  // 从数据中提取所有分类
+  void _updateCategories() {
+    final categories = <String>{'全部'};
+    for (var item in _items) {
+      if (item.category.isNotEmpty) {
+        categories.add(item.category);
+      }
+    }
+    _categories = categories.toList()..sort((a, b) {
+      if (a == '全部') return -1;
+      if (b == '全部') return 1;
+      return a.compareTo(b);
+    });
   }
 
   void _filterItems() {
@@ -88,11 +110,27 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
         _filteredItems = List.from(_items);
       } else {
         _filteredItems = _items.where((item) {
+          // 分类匹配
           final categoryMatch = _selectedCategory == '全部' || item.category == _selectedCategory;
-          final searchMatch = _searchQuery.isEmpty ||
-              item.title.contains(_searchQuery) ||
-              item.content.contains(_searchQuery) ||
-              item.tags.any((tag) => tag.contains(_searchQuery));
+          
+          // 搜索匹配（改进的搜索逻辑）
+          bool searchMatch = true;
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.trim().toLowerCase();
+            // 支持多关键词搜索（空格分隔）
+            final keywords = query.split(' ').where((k) => k.isNotEmpty).toList();
+            
+            if (keywords.isNotEmpty) {
+              // 所有关键词都要匹配（AND逻辑）
+              searchMatch = keywords.every((keyword) {
+                return item.title.toLowerCase().contains(keyword) ||
+                    item.content.toLowerCase().contains(keyword) ||
+                    item.category.toLowerCase().contains(keyword) ||
+                    item.tags.any((tag) => tag.toLowerCase().contains(keyword));
+              });
+            }
+          }
+          
           return categoryMatch && searchMatch;
         }).toList();
       }
@@ -116,14 +154,71 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
-                    child: Text(
-                      '拾衣 · 知识',
-                      style: ShiyiFont.titleStyle.copyWith(color: ShiyiColor.primaryColor),
-                      textAlign: TextAlign.center,
-                    ),
+                    child: _searchQuery.isEmpty
+                        ? Text(
+                            '拾衣 · 知识',
+                            style: ShiyiFont.titleStyle.copyWith(color: ShiyiColor.primaryColor),
+                            textAlign: TextAlign.center,
+                          )
+                        : GestureDetector(
+                            onTap: _showSearchDialog,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search,
+                                  color: ShiyiColor.primaryColor,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _searchQuery,
+                                    style: ShiyiFont.bodyStyle.copyWith(
+                                      color: ShiyiColor.primaryColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _clearSearch,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: ShiyiColor.primaryColor.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: ShiyiColor.primaryColor,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.search, color: ShiyiColor.primaryColor),
+                    icon: Icon(
+                      Icons.favorite,
+                      color: ShiyiColor.primaryColor,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        ShiyiTransition.freshSlideTransition(const FavoritesScreen()),
+                      ).then((_) => _loadData());
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _searchQuery.isEmpty ? Icons.search : Icons.edit,
+                      color: ShiyiColor.primaryColor,
+                    ),
                     onPressed: _showSearchDialog,
                   ),
                 ],
@@ -143,28 +238,46 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
+                      physics: const AlwaysScrollableScrollPhysics(),
                       child: Row(
-                        children: ['全部', '服饰文化', '汉服知识', '穿着礼仪', '历史渊源'].map((category) {
+                        mainAxisSize: MainAxisSize.min,
+                        children: _categories.map((category) {
                           final isSelected = category == _selectedCategory;
                           return Container(
                             margin: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: Text(
-                                category,
-                                style: ShiyiFont.smallStyle.copyWith(
-                                  color: isSelected ? Colors.white : ShiyiColor.primaryColor,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCategory = category;
+                                    _filterItems();
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? ShiyiColor.primaryColor
+                                        : ShiyiColor.bgColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? ShiyiColor.primaryColor
+                                          : ShiyiColor.borderColor,
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    category,
+                                    style: ShiyiFont.smallStyle.copyWith(
+                                      color: isSelected ? Colors.white : ShiyiColor.primaryColor,
+                                      fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  _selectedCategory = category;
-                                  _filterItems();
-                                });
-                              },
-                              backgroundColor: ShiyiColor.bgColor,
-                              selectedColor: ShiyiColor.primaryColor,
-                              checkmarkColor: Colors.white,
                             ),
                           );
                         }).toList(),
@@ -220,9 +333,14 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              item.title,
+                                            HighlightText(
+                                              text: item.title,
+                                              highlight: _searchQuery,
                                               style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
+                                              highlightStyle: ShiyiFont.bodyStyle.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                backgroundColor: Colors.yellow.withOpacity(0.4),
+                                              ),
                                             ),
                                             const SizedBox(height: 4),
                                             Container(
@@ -234,10 +352,16 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
                                                 color: ShiyiColor.primaryColor.withOpacity(0.1),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
-                                              child: Text(
-                                                item.category,
+                                              child: HighlightText(
+                                                text: item.category,
+                                                highlight: _searchQuery,
                                                 style: ShiyiFont.smallStyle.copyWith(
                                                   color: ShiyiColor.primaryColor,
+                                                ),
+                                                highlightStyle: ShiyiFont.smallStyle.copyWith(
+                                                  color: ShiyiColor.primaryColor,
+                                                  backgroundColor: Colors.yellow.withOpacity(0.4),
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
@@ -259,12 +383,19 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  Text(
-                                    item.content,
+                                  HighlightText(
+                                    text: item.content,
+                                    highlight: _searchQuery,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: ShiyiFont.smallStyle.copyWith(
                                       color: ShiyiColor.textSecondary,
+                                      height: 1.5,
+                                    ),
+                                    highlightStyle: ShiyiFont.smallStyle.copyWith(
+                                      color: ShiyiColor.textSecondary,
+                                      backgroundColor: Colors.yellow.withOpacity(0.4),
+                                      fontWeight: FontWeight.bold,
                                       height: 1.5,
                                     ),
                                   ),
@@ -303,66 +434,167 @@ class _KnowledgeListScreenState extends State<KnowledgeListScreen> {
     );
   }
 
+  void _clearSearch() {
+    setState(() {
+      _searchQuery = '';
+      _filterItems();
+    });
+  }
+
   void _showSearchDialog() {
+    final TextEditingController controller = TextEditingController(text: _searchQuery);
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          '搜索',
-          style: ShiyiFont.bodyStyle.copyWith(fontWeight: FontWeight.w500),
-        ),
-        content: TextField(
-          autofocus: true,
-          style: ShiyiFont.bodyStyle,
-          decoration: InputDecoration(
-            hintText: '输入关键词搜索',
-            hintStyle: ShiyiFont.smallStyle,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: ShiyiColor.borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: ShiyiColor.primaryColor),
-            ),
-            filled: true,
-            fillColor: ShiyiColor.bgColor,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white.withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-              _filterItems();
-            });
-          },
+          title: Row(
+            children: [
+              Icon(Icons.search, color: ShiyiColor.primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '搜索知识库',
+                  style: ShiyiFont.bodyStyle.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              if (_searchQuery.isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.close, color: ShiyiColor.textSecondary, size: 20),
+                  onPressed: () {
+                    controller.clear();
+                    setDialogState(() {});
+                    setState(() {
+                      _searchQuery = '';
+                      _filterItems();
+                    });
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+                style: ShiyiFont.bodyStyle,
+                decoration: InputDecoration(
+                  hintText: '输入关键词搜索（支持多个关键词，空格分隔）',
+                  hintStyle: ShiyiFont.smallStyle.copyWith(
+                    color: ShiyiColor.textSecondary.withOpacity(0.7),
+                  ),
+                  prefixIcon: Icon(Icons.search, color: ShiyiColor.primaryColor),
+                  suffixIcon: controller.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, color: ShiyiColor.textSecondary),
+                          onPressed: () {
+                            controller.clear();
+                            setDialogState(() {});
+                            setState(() {
+                              _searchQuery = '';
+                              _filterItems();
+                            });
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: ShiyiColor.borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: ShiyiColor.primaryColor, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: ShiyiColor.bgColor,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setDialogState(() {});
+                  setState(() {
+                    _searchQuery = value;
+                    _filterItems();
+                  });
+                },
+                onSubmitted: (value) {
+                  Navigator.pop(context);
+                },
+              ),
+              if (_searchQuery.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ShiyiColor.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: ShiyiColor.primaryColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '找到 ${_filteredItems.length} 条结果',
+                          style: ShiyiFont.smallStyle.copyWith(
+                            color: ShiyiColor.primaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                controller.clear();
+                setState(() {
+                  _searchQuery = '';
+                  _filterItems();
+                });
+                Navigator.pop(context);
+              },
+              child: Text(
+                '清除',
+                style: TextStyle(
+                  color: _searchQuery.isEmpty
+                      ? ShiyiColor.textSecondary.withOpacity(0.5)
+                      : ShiyiColor.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                '完成',
+                style: TextStyle(
+                  color: ShiyiColor.primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _searchQuery = '';
-                _filterItems();
-              });
-              Navigator.pop(context);
-            },
-            child: Text(
-              '清除',
-              style: TextStyle(color: ShiyiColor.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              '确定',
-              style: TextStyle(color: ShiyiColor.primaryColor),
-            ),
-          ),
-        ],
       ),
-    );
+    ).then((_) {
+      controller.dispose();
+    });
   }
 }

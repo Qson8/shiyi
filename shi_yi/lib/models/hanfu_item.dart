@@ -66,5 +66,35 @@ class HanfuItem extends HiveObject {
       notes: notes ?? this.notes,
     );
   }
+
+  /// 转换为JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'dynasty': dynasty,
+      'type': type,
+      'sizes': sizes,
+      'imagePaths': imagePaths,
+      'tags': tags,
+      'createdAt': createdAt.toIso8601String(),
+      'notes': notes,
+    };
+  }
+
+  /// 从JSON创建
+  factory HanfuItem.fromJson(Map<String, dynamic> json) {
+    return HanfuItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      dynasty: json['dynasty'] as String,
+      type: json['type'] as String,
+      sizes: Map<String, double>.from(json['sizes'] as Map? ?? {}),
+      imagePaths: List<String>.from(json['imagePaths'] as List? ?? []),
+      tags: List<String>.from(json['tags'] as List? ?? []),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      notes: json['notes'] as String?,
+    );
+  }
 }
 

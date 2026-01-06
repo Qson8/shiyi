@@ -51,6 +51,8 @@ dependencies:
   # 工具类
   path_provider: ^2.1.1
   shared_preferences: ^2.2.2
+  image_picker: ^1.0.7
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
@@ -72,11 +74,12 @@ flutter:
 
   # Assets配置
   assets:
-    - assets/models/hanfu-test.glb
+    - assets/models/
     - assets/3d_libs/three.min.js
     - assets/3d_libs/GLTFLoader.js
     - assets/3d_libs/OrbitControls.js
     - assets/data/knowledge_base.json
+    - assets/data/models.json
 
   # 字体配置
   fonts:
